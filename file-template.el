@@ -1,11 +1,13 @@
 ;;; file-template.el --- File templates
 
 ;; Copyright (C) 2007  Scott Frazer
+;; Copyright (C) 2023  Hiromasa YOSHIMOTO
 
 ;; Author: Scott Frazer <frazer.scott@gmail.com>
-;; Maintainer: Scott Frazer <frazer.scott@gmail.com>
+;;         Hiromasa YOSHIMOTO <hiromasa.yoshimoto at gmail dot com>
+;; Maintainer: Hiromasa YOSHIMOTO <hiromasa.yoshimoto at gmail dot com>
 ;; Created: 29 Nov 2007
-;; Version: 1.0
+;; Version: 1.1
 ;; Keywords: template
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -39,12 +41,14 @@
 ;; adding this to your .emacs:
 ;;
 ;; (autoload 'file-template-find-file-not-found-hook "file-template" nil t)
-;; (add-hook 'find-file-not-found-hooks 'file-template-find-file-not-found-hook 'append)
+;; (push #'file-template-find-file-not-found-hook find-file-not-found-functions)
 ;;
 ;;; Change log:
 ;;
 ;; 29 Nov 2007 -- v1.0
 ;;                Initial creation
+;; 24 Sep 2023 -- v1.1
+;;                Template files are now recursively searched in parent directories
 
 ;;; Code:
 
@@ -89,6 +93,11 @@ Suggested values are \" \", \"0\" and \"\"."
   "*List of directories where templates are."
   :group 'file-template
   :type '(repeat string))
+
+(defcustom file-template-search-parent-dirs t
+  "*Recursively search parent directories for templates."
+  :group 'file-template
+  :type 'boolean)
 
 (defcustom file-template-search-current-dir t
   "*Search current directory of buffer for templates before `file-template-paths'."
@@ -301,7 +310,7 @@ Otherwise, use `file-template-auto-insert'."
   "Insert default template into buffer."
   (interactive)
   (let ((mapping-alist file-template-mapping-alist)
-        template-name template)
+        template-name)
     (setq template-name
           (catch 'found
             (while mapping-alist
@@ -310,12 +319,16 @@ Otherwise, use `file-template-auto-insert'."
                 (setq mapping-alist (cdr mapping-alist))))))
     (if (not template-name)
         (message (format "No template defined for file type \"%s\"" (buffer-name)))
-      (setq template (locate-file template-name (if file-template-search-current-dir
-                                                    (cons "." file-template-paths)
-                                                  file-template-paths)))
-      (if (not template)
-          (message (format "Couldn't find template \"%s\"" template-name))
-        (file-template-insert template)))))
+      (let
+	  ((template (or (if file-template-search-parent-dirs
+			     (let ((dir (locate-dominating-file "." template-name)))
+			       (if dir (concat dir "/" template-name))))
+			 (locate-file template-name (if file-template-search-current-dir
+							(cons "." file-template-paths)
+						      file-template-paths)))))
+	(if (not template)
+	    (message (format "Couldn't find template \"%s\"" template-name))
+          (file-template-insert template))))))
 
 ;;;###autoload
 (defun file-template-find-file-not-found-hook ()
