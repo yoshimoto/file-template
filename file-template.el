@@ -143,6 +143,7 @@ Suggested values are \" \", \"0\" and \"\"."
     ("e" . (file-name-extension (buffer-file-name)))
     ("E" . (upcase (or (file-name-extension (buffer-file-name)) "")))
     ("p" . (file-name-directory (buffer-file-name)))
+    ("T" . (current-time-string))
     ("d" . (file-template-pad-num-string (file-template-get-date-item 'day)))
     ("m" . (file-template-get-month-num))
     ("M" . (file-template-get-date-item 'month))
@@ -178,6 +179,7 @@ tags are:
  %e       file extension
  %E       file extension capitalized
  %p       file directory
+ %T       current local time, as a human-readable string
  %d       day
  %m       month
  %M       abbreviated month name
